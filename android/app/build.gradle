@@ -79,12 +79,29 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.appchat"
+    
+    // Fix for Windows MAX_PATH issue with CMake
+    externalNativeBuild {
+        cmake {
+            version "3.22.1"
+        }
+    }
+    
     defaultConfig {
         applicationId "com.appchat"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        
+        // Shorter path for CMake intermediate files
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                // Link C++ standard library explicitly to fix linker errors
+                arguments "-DCMAKE_SHARED_LINKER_FLAGS=-lc++_shared"
+            }
+        }
     }
     signingConfigs {
         debug {

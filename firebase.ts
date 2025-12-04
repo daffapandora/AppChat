@@ -29,8 +29,8 @@ const firebaseConfig = {
   projectId: "aplikasi-chat-59dab",
   storageBucket: "aplikasi-chat-59dab.firebasestorage.app",
   messagingSenderId: "257943606914",
-  appId: "1:257943606914:web:a593db09c3b4aa57bd869b",
-  measurementId: "G-1RZ49XTJ0N"
+  appId: "1:257943606914:web:1a4a653a2aa9b1a1bd869b",
+  measurementId: "G-0EMZ83X8TW"
 };
 
 // Initialize Firebase
