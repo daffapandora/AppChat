@@ -21,15 +21,15 @@ import {
 } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// TODO: Replace with your Firebase config
+// TODO: Replace with your Firebase config from Firebase Console
+// Get config from: Firebase Console > Project Settings > General > Your apps
 const firebaseConfig = {
-  apiKey: "AIzaSyCvFi2fXZQJD_d8ByLD76s17Xz8M7SQivI",
-  authDomain: "aplikasi-chat-59dab.firebaseapp.com",
-  projectId: "aplikasi-chat-59dab",
-  storageBucket: "aplikasi-chat-59dab.firebasestorage.app",
-  messagingSenderId: "257943606914",
-  appId: "1:257943606914:web:a593db09c3b4aa57bd869b",
-  measurementId: "G-1RZ49XTJ0N"
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
 };
 
 const app = initializeApp(firebaseConfig);
