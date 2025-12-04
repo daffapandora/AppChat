@@ -146,6 +146,15 @@ export default function UserListScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Profile')}
+          style={styles.profileButton}>
+          <View style={styles.profileAvatar}>
+            <Text style={styles.profileAvatarText}>
+              {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
+            </Text>
+          </View>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Chats</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Logout</Text>
@@ -206,6 +215,24 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  profileButton: {
+    padding: 4,
+  },
+  profileAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  profileAvatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   logoutButton: {
     padding: 8,
