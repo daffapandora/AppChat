@@ -39,7 +39,7 @@ export default function LoginScreen({ navigation }: Props) {
             storedUser.email,
             storedUser.password
           );
-          navigation.replace('Chat', { displayName: storedUser.displayName });
+          navigation.replace('UserList');
         }
       } catch (error: any) {
         console.log('Auto-login failed:', error.message);
@@ -66,7 +66,7 @@ export default function LoginScreen({ navigation }: Props) {
         password: password.trim(),
         displayName: displayName.trim(),
       });
-      navigation.replace('Chat', { displayName: displayName.trim() });
+      navigation.replace('UserList');
     } catch (error: any) {
       let errorMessage = 'Terjadi kesalahan saat login';
       if (error.code === 'auth/user-not-found') {
