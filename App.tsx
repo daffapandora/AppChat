@@ -5,6 +5,7 @@ import { RootStackParamList } from './types/navigation';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import UserListScreen from './screens/UserListScreen';
+import ProfileScreen from './screens/ProfileScreen';
 import ChatScreen from './screens/ChatScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -20,6 +21,7 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="UserList" component={UserListScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
