@@ -1,97 +1,245 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# AppChat - Aplikasi Chat Real-time
 
-# Getting Started
+Aplikasi chat sederhana menggunakan React Native dan Firebase dengan fitur lengkap:
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## ✨ Fitur
 
-## Step 1: Start Metro
+- ✅ **Autentikasi dengan Email & Password** (bukan anonymous)
+- ✅ **Auto-login** - Menyimpan kredensial untuk login otomatis
+- ✅ **Offline Mode** - Chat history tersimpan di local storage
+- ✅ **Upload Gambar** - Kirim gambar dalam chat
+- ✅ **Real-time Messaging** - Pesan langsung tersinkronisasi
+- ✅ **Network Status Indicator** - Menampilkan status online/offline
+- ✅ **Modern UI** - Desain yang clean dan responsive
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 📋 Prerequisites
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Pastikan sudah terinstall:
 
-```sh
-# Using npm
+- Node.js (>=20)
+- Java Development Kit (JDK) 17
+- Android SDK
+- Android Studio (untuk emulator)
+- React Native CLI
+
+## 🚀 Setup Project
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/daffapandora/AppChat.git
+cd AppChat
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Setup Firebase
+
+1. Buka [Firebase Console](https://console.firebase.google.com)
+2. Buat project baru dengan nama "ChatApp" (atau nama lain)
+3. Tambahkan platform **Android**:
+   - Package name: `com.appchat`
+   - Pastikan sama dengan `android/app/src/main/AndroidManifest.xml`
+4. Download file `google-services.json`
+5. Masukkan ke folder: `android/app/google-services.json`
+
+### 4. Enable Firebase Services
+
+Di Firebase Console:
+
+#### Authentication
+- Buka **Authentication** > **Sign-in method**
+- Enable **Email/Password**
+
+#### Firestore Database
+- Buka **Firestore Database**
+- Create database (Start in **test mode** untuk development)
+- Rules (untuk development):
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+#### Storage
+- Buka **Storage**
+- Get started
+- Rules (untuk development):
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+### 5. Update Firebase Config
+
+Buka file `firebase.ts` dan ganti dengan config dari Firebase Console:
+
+```typescript
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+```
+
+### 6. Setup Android Build.gradle
+
+File sudah dikonfigurasi, tapi pastikan:
+
+**`android/build.gradle`:**
+```gradle
+buildscript {
+    dependencies {
+        classpath("com.google.gms:google-services:4.4.0")
+    }
+}
+```
+
+**`android/app/build.gradle`:**
+```gradle
+apply plugin: "com.android.application"
+apply plugin: "com.google.gms.google-services"  // Add this line
+```
+
+### 7. Setup Android Permissions
+
+File `android/app/src/main/AndroidManifest.xml` sudah include permissions yang dibutuhkan:
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+## 🏃 Running the App
+
+### Start Metro Bundler
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+### Run on Android
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+Atau jika error:
+```bash
+npx react-native run-android
 ```
 
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+### Run on iOS (Mac only)
+```bash
+cd ios && pod install && cd ..
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 📱 Cara Menggunakan
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+1. **Register** - Daftar dengan email dan password baru
+2. **Login** - Login dengan akun yang sudah dibuat
+3. **Auto-login** - Setelah login pertama kali, app akan otomatis login di pembukaan berikutnya
+4. **Chat** - Kirim pesan teks
+5. **Upload Image** - Klik icon kamera untuk upload gambar
+6. **Offline Mode** - Pesan akan tersimpan lokal saat offline dan tersinkronisasi saat online
+7. **Logout** - Klik tombol Logout di header untuk keluar
 
-## Step 3: Modify your app
+## 🐛 Troubleshooting
 
-Now that you have successfully run the app, let's make changes!
+### Error: Task ':app:processDebugGoogleServices' failed
+- Pastikan file `google-services.json` ada di `android/app/`
+- Pastikan package name di Firebase Console sama dengan AndroidManifest.xml
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### Error: Unable to resolve module
+```bash
+npm install
+npx react-native start --reset-cache
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Error: Image picker not working
+```bash
+cd android && ./gradlew clean && cd ..
+npx react-native run-android
+```
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+### Build failed di Android
+```bash
+cd android
+./gradlew clean
+cd ..
+npx react-native run-android
+```
 
-## Congratulations! :tada:
+## 📚 Teknologi yang Digunakan
 
-You've successfully run and modified your React Native App. :partying_face:
+- **React Native 0.82** - Framework mobile
+- **TypeScript** - Type safety
+- **Firebase Authentication** - User authentication
+- **Firebase Firestore** - Real-time database
+- **Firebase Storage** - Image storage
+- **React Navigation** - Navigation
+- **AsyncStorage** - Local storage untuk offline mode
+- **NetInfo** - Network status monitoring
+- **React Native Image Picker** - Image selection
 
-### Now what?
+## 📝 Struktur Folder
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```
+AppChat/
+├── android/                 # Android native code
+├── ios/                     # iOS native code
+├── screens/                 # App screens
+│   ├── LoginScreen.tsx      # Login page with auto-login
+│   ├── RegisterScreen.tsx   # Registration page
+│   └── ChatScreen.tsx       # Chat room with offline mode
+├── types/                   # TypeScript types
+│   └── navigation.ts        # Navigation types
+├── utils/                   # Utility functions
+│   └── storage.ts           # AsyncStorage helpers
+├── App.tsx                  # Main app component
+├── firebase.ts              # Firebase configuration
+└── package.json             # Dependencies
+```
 
-# Troubleshooting
+## 🎯 Fitur Tambahan yang Sudah Diimplementasi
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+Sesuai tugas:
+- ✅ Autentikasi username-password (email-password)
+- ✅ Auto-login menggunakan AsyncStorage
+- ✅ Offline mode - history chat disimpan di local storage
+- ✅ Upload gambar menggunakan Firebase Storage
 
-# Learn More
+Fitur bonus:
+- ✅ Network status indicator (online/offline)
+- ✅ Loading states untuk UX yang lebih baik
+- ✅ Error handling yang comprehensive
+- ✅ Modern UI dengan design yang clean
+- ✅ Image preview sebelum dikirim
+- ✅ Unsynced message indicator
 
-To learn more about React Native, take a look at the following resources:
+## 👨‍💻 Author
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**Daffa Pandora**  
+Diponegoro University - Informatics
+
+## 📄 License
+
+MIT License
