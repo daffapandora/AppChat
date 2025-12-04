@@ -15,30 +15,21 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.appchat"
-    
-    externalNativeBuild {
-        cmake {
-            version "3.22.1"
-        }
-    }
+    namespace "com.chatapp"
     
     defaultConfig {
-        applicationId "com.appchat"
+        applicationId "com.chatapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         
-        externalNativeBuild {
-            cmake {
-                cppFlags "-std=c++17"
-                arguments "-DCMAKE_SHARED_LINKER_FLAGS=-lc++_shared"
-            }
-        }
-        
         // MultiDex support for Firebase
         multiDexEnabled true
+        
+        ndk {
+            abiFilters "arm64-v8a"
+        }
     }
     
     signingConfigs {
@@ -90,3 +81,4 @@ dependencies {
     // MultiDex
     implementation 'androidx.multidex:multidex:2.0.1'
 }
+
