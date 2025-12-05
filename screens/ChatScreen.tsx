@@ -20,7 +20,7 @@ import {
   onSnapshot,
   Timestamp,
 } from '../firebase';
-import { messagesCollection, auth, signOut, storage, ref, uploadBytes, getDownloadURL } from '../firebase';
+import { messagesCollection, auth, signOut } from '../firebase';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import {
@@ -38,7 +38,7 @@ type MessageType = {
   id: string;
   text: string;
   user: string;
-  imageUrl?: string;
+  imageBase64?: string;
   createdAt: { seconds: number; nanoseconds: number } | null;
   synced?: boolean;
 };
@@ -50,7 +50,7 @@ export default function ChatScreen({ route, navigation }: Props) {
   const [message, setMessage] = useState<string>('');
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(true);
-  const [uploading, setUploading] = useState<boolean>(false);
+  const [processing, setProcessing] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Monitor network status
@@ -88,7 +88,7 @@ export default function ChatScreen({ route, navigation }: Props) {
             id: doc.id,
             text: data.text || '',
             user: data.user || '',
-            imageUrl: data.imageUrl,
+            imageBase64: data.imageBase64,
             createdAt: data.createdAt
               ? {
                   seconds: (data.createdAt as Timestamp).seconds,
@@ -139,9 +139,10 @@ export default function ChatScreen({ route, navigation }: Props) {
     launchImageLibrary(
       {
         mediaType: 'photo',
-        maxWidth: 1024,
-        maxHeight: 1024,
-        quality: 0.8,
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.7,
+        includeBase64: true, // PENTING: Request base64
       },
       (response) => {
         if (response.didCancel) {
@@ -152,9 +153,19 @@ export default function ChatScreen({ route, navigation }: Props) {
           return;
         }
         if (response.assets && response.assets[0]) {
-          const imageUri = response.assets[0].uri;
-          if (imageUri) {
-            setSelectedImage(imageUri);
+          const asset = response.assets[0];
+          
+          // Validasi ukuran file (max 1MB untuk base64)
+          if (asset.fileSize && asset.fileSize > 1024 * 1024) {
+            Alert.alert(
+              'Ukuran Terlalu Besar',
+              'Ukuran gambar maksimal 1MB. Silakan pilih gambar yang lebih kecil.'
+            );
+            return;
+          }
+
+          if (asset.uri) {
+            setSelectedImage(asset.uri);
           } else {
             Alert.alert('Error', 'URI gambar tidak valid');
           }
@@ -163,39 +174,27 @@ export default function ChatScreen({ route, navigation }: Props) {
     );
   };
 
-  const uploadImage = async (uri: string): Promise<string> => {
+  const convertImageToBase64 = async (uri: string): Promise<string> => {
     try {
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(7);
-      const filename = `images/${timestamp}_${randomString}.jpg`;
-      
-      console.log('Uploading image to:', filename);
-      
-      // Create storage reference
-      const imageRef = ref(storage, filename);
-
-      // Fetch image and convert to blob
+      // Untuk React Native, kita perlu fetch image dan convert ke base64
       const response = await fetch(uri);
-      if (!response.ok) {
-        throw new Error('Gagal mengambil gambar dari URI');
-      }
       const blob = await response.blob();
       
-      console.log('Image blob size:', blob.size);
-
-      // Upload to Firebase Storage
-      const uploadResult = await uploadBytes(imageRef, blob);
-      console.log('Upload successful:', uploadResult.metadata.fullPath);
-
-      // Get download URL
-      const downloadURL = await getDownloadURL(imageRef);
-      console.log('Download URL:', downloadURL);
-      
-      return downloadURL;
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to convert to base64'));
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     } catch (error: any) {
-      console.error('Error uploading image:', error);
-      throw new Error('Gagal mengupload gambar: ' + (error.message || 'Unknown error'));
+      console.error('Error converting to base64:', error);
+      throw new Error('Gagal memproses gambar: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -203,32 +202,32 @@ export default function ChatScreen({ route, navigation }: Props) {
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !selectedImage) return;
 
-    let imageUrl: string | undefined = undefined;
+    let imageBase64: string | undefined = undefined;
 
-    // Upload image if selected
+    // Convert image to base64 if selected
     if (selectedImage) {
-      if (!isOnline) {
-        Alert.alert(
-          'Offline',
-          'Upload gambar memerlukan koneksi internet. Pesan teks akan disimpan secara lokal.'
-        );
-        setSelectedImage(null);
-        return;
-      }
-
-      setUploading(true);
+      setProcessing(true);
       try {
-        console.log('Starting image upload...');
-        imageUrl = await uploadImage(selectedImage);
-        console.log('Image uploaded successfully:', imageUrl);
-        Alert.alert('Sukses', 'Gambar berhasil diupload!');
+        console.log('Converting image to base64...');
+        imageBase64 = await convertImageToBase64(selectedImage);
+        console.log('Image converted, size:', imageBase64.length, 'characters');
+        
+        // Validasi ukuran base64 (Firestore max 1MB per field)
+        if (imageBase64.length > 1048576) {
+          Alert.alert(
+            'Gambar Terlalu Besar',
+            'Ukuran gambar setelah diproses terlalu besar. Silakan pilih gambar yang lebih kecil.'
+          );
+          setProcessing(false);
+          return;
+        }
       } catch (error: any) {
-        console.error('Upload error:', error);
-        Alert.alert('Error', error.message || 'Gagal mengupload gambar');
-        setUploading(false);
+        console.error('Conversion error:', error);
+        Alert.alert('Error', error.message || 'Gagal memproses gambar');
+        setProcessing(false);
         return;
       }
-      setUploading(false);
+      setProcessing(false);
       setSelectedImage(null);
     }
 
@@ -236,7 +235,7 @@ export default function ChatScreen({ route, navigation }: Props) {
       id: `temp_${Date.now()}`,
       text: trimmedMessage,
       user: displayName,
-      imageUrl,
+      imageBase64,
       createdAt: {
         seconds: Math.floor(Date.now() / 1000),
         nanoseconds: 0,
@@ -257,16 +256,25 @@ export default function ChatScreen({ route, navigation }: Props) {
           createdAt: serverTimestamp(),
         };
         
-        // Only add imageUrl if it exists
-        if (imageUrl) {
-          messageData.imageUrl = imageUrl;
+        // Only add imageBase64 if it exists
+        if (imageBase64) {
+          messageData.imageBase64 = imageBase64;
         }
         
         await addDoc(messagesCollection, messageData);
         console.log('Message sent to Firestore');
       } catch (error: any) {
         console.error('Error sending message:', error);
-        Alert.alert('Error', 'Gagal mengirim pesan: ' + (error.message || 'Unknown error'));
+        
+        // Cek jika error karena ukuran document terlalu besar
+        if (error.code === 'invalid-argument' || error.message?.includes('size')) {
+          Alert.alert(
+            'Error',
+            'Gambar terlalu besar untuk disimpan. Firestore membatasi ukuran document maksimal 1MB.'
+          );
+        } else {
+          Alert.alert('Error', 'Gagal mengirim pesan: ' + (error.message || 'Unknown error'));
+        }
       }
     } else {
       // Save to local storage when offline
@@ -290,9 +298,9 @@ export default function ChatScreen({ route, navigation }: Props) {
           <Text style={[styles.sender, isMyMessage && styles.mySender]}>
             {item.user}
           </Text>
-          {item.imageUrl && (
+          {item.imageBase64 && (
             <Image 
-              source={{ uri: item.imageUrl }} 
+              source={{ uri: item.imageBase64 }} 
               style={styles.image}
               resizeMode="cover"
               onError={(error) => {
@@ -349,6 +357,9 @@ export default function ChatScreen({ route, navigation }: Props) {
             style={styles.removeImageButton}>
             <Text style={styles.removeImageText}>✕</Text>
           </TouchableOpacity>
+          <Text style={styles.previewText}>
+            Gambar akan dikonversi ke text (base64) dan disimpan di Firestore
+          </Text>
         </View>
       )}
 
@@ -357,7 +368,7 @@ export default function ChatScreen({ route, navigation }: Props) {
         <TouchableOpacity
           onPress={pickImage}
           style={styles.imageButton}
-          disabled={uploading}>
+          disabled={processing}>
           <Text style={styles.imageButtonText}>📷</Text>
         </TouchableOpacity>
         <TextInput
@@ -365,20 +376,26 @@ export default function ChatScreen({ route, navigation }: Props) {
           placeholder="Ketik pesan..."
           value={message}
           onChangeText={setMessage}
-          editable={!uploading}
+          editable={!processing}
           multiline
         />
         <TouchableOpacity
           onPress={sendMessage}
-          style={[styles.sendButton, uploading && styles.sendButtonDisabled]}
-          disabled={uploading || (!message.trim() && !selectedImage)}>
-          {uploading ? (
+          style={[styles.sendButton, processing && styles.sendButtonDisabled]}
+          disabled={processing || (!message.trim() && !selectedImage)}>
+          {processing ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={styles.sendButtonText}>Kirim</Text>
           )}
         </TouchableOpacity>
       </View>
+      
+      {processing && (
+        <View style={styles.processingOverlay}>
+          <Text style={styles.processingText}>Memproses gambar...</Text>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -516,6 +533,12 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
   },
+  previewText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
   removeImageButton: {
     position: 'absolute',
     top: 15,
@@ -531,5 +554,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  processingOverlay: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    padding: 10,
+  },
+  processingText: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    fontSize: 14,
   },
 });
