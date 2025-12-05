@@ -19,7 +19,6 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -37,7 +36,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 export const messagesCollection = collection(
   db,
@@ -47,7 +45,6 @@ export const messagesCollection = collection(
 export {
   auth,
   db,
-  storage,
   collection,
   addDoc,
   serverTimestamp,
@@ -58,9 +55,6 @@ export {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  ref,
-  uploadBytes,
-  getDownloadURL,
   Timestamp,
 };
 
