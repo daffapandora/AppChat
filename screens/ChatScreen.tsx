@@ -105,6 +105,7 @@ export default function ChatScreen({ route, navigation }: Props) {
       },
       (error) => {
         console.error('Error listening to messages:', error);
+        Alert.alert('Error', 'Gagal memuat pesan: ' + error.message);
       }
     );
 
@@ -147,26 +148,55 @@ export default function ChatScreen({ route, navigation }: Props) {
           return;
         }
         if (response.errorCode) {
-          Alert.alert('Error', 'Gagal memilih gambar');
+          Alert.alert('Error', 'Gagal memilih gambar: ' + response.errorMessage);
           return;
         }
         if (response.assets && response.assets[0]) {
-          setSelectedImage(response.assets[0].uri || null);
+          const imageUri = response.assets[0].uri;
+          if (imageUri) {
+            setSelectedImage(imageUri);
+          } else {
+            Alert.alert('Error', 'URI gambar tidak valid');
+          }
         }
       }
     );
   };
 
   const uploadImage = async (uri: string): Promise<string> => {
-    const filename = `images/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-    const imageRef = ref(storage, filename);
+    try {
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(7);
+      const filename = `images/${timestamp}_${randomString}.jpg`;
+      
+      console.log('Uploading image to:', filename);
+      
+      // Create storage reference
+      const imageRef = ref(storage, filename);
 
-    const response = await fetch(uri);
-    const blob = await response.blob();
+      // Fetch image and convert to blob
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error('Gagal mengambil gambar dari URI');
+      }
+      const blob = await response.blob();
+      
+      console.log('Image blob size:', blob.size);
 
-    await uploadBytes(imageRef, blob);
-    const downloadURL = await getDownloadURL(imageRef);
-    return downloadURL;
+      // Upload to Firebase Storage
+      const uploadResult = await uploadBytes(imageRef, blob);
+      console.log('Upload successful:', uploadResult.metadata.fullPath);
+
+      // Get download URL
+      const downloadURL = await getDownloadURL(imageRef);
+      console.log('Download URL:', downloadURL);
+      
+      return downloadURL;
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      throw new Error('Gagal mengupload gambar: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const sendMessage = async () => {
@@ -188,9 +218,13 @@ export default function ChatScreen({ route, navigation }: Props) {
 
       setUploading(true);
       try {
+        console.log('Starting image upload...');
         imageUrl = await uploadImage(selectedImage);
-      } catch (error) {
-        Alert.alert('Error', 'Gagal mengupload gambar');
+        console.log('Image uploaded successfully:', imageUrl);
+        Alert.alert('Sukses', 'Gambar berhasil diupload!');
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        Alert.alert('Error', error.message || 'Gagal mengupload gambar');
         setUploading(false);
         return;
       }
@@ -217,15 +251,22 @@ export default function ChatScreen({ route, navigation }: Props) {
     if (isOnline) {
       // Send to Firestore when online
       try {
-        await addDoc(messagesCollection, {
+        const messageData: any = {
           text: trimmedMessage,
           user: displayName,
-          imageUrl,
           createdAt: serverTimestamp(),
-        });
-      } catch (error) {
+        };
+        
+        // Only add imageUrl if it exists
+        if (imageUrl) {
+          messageData.imageUrl = imageUrl;
+        }
+        
+        await addDoc(messagesCollection, messageData);
+        console.log('Message sent to Firestore');
+      } catch (error: any) {
         console.error('Error sending message:', error);
-        Alert.alert('Error', 'Gagal mengirim pesan');
+        Alert.alert('Error', 'Gagal mengirim pesan: ' + (error.message || 'Unknown error'));
       }
     } else {
       // Save to local storage when offline
@@ -246,11 +287,24 @@ export default function ChatScreen({ route, navigation }: Props) {
             styles.msgBox,
             isMyMessage ? styles.myMsg : styles.otherMsg,
           ]}>
-          <Text style={styles.sender}>{item.user}</Text>
+          <Text style={[styles.sender, isMyMessage && styles.mySender]}>
+            {item.user}
+          </Text>
           {item.imageUrl && (
-            <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            <Image 
+              source={{ uri: item.imageUrl }} 
+              style={styles.image}
+              resizeMode="cover"
+              onError={(error) => {
+                console.error('Error loading image:', error.nativeEvent.error);
+              }}
+            />
           )}
-          {item.text ? <Text style={styles.msgText}>{item.text}</Text> : null}
+          {item.text ? (
+            <Text style={[styles.msgText, isMyMessage && styles.myMsgText]}>
+              {item.text}
+            </Text>
+          ) : null}
           {item.synced === false && (
             <Text style={styles.unsyncedText}>⏱ Belum tersinkronisasi</Text>
           )}
@@ -317,7 +371,7 @@ export default function ChatScreen({ route, navigation }: Props) {
         <TouchableOpacity
           onPress={sendMessage}
           style={[styles.sendButton, uploading && styles.sendButtonDisabled]}
-          disabled={uploading}>
+          disabled={uploading || (!message.trim() && !selectedImage)}>
           {uploading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
@@ -388,9 +442,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  mySender: {
+    color: '#E0E0E0',
+  },
   msgText: {
     fontSize: 15,
     lineHeight: 20,
+    color: '#333',
+  },
+  myMsgText: {
+    color: '#fff',
   },
   unsyncedText: {
     fontSize: 10,
@@ -403,6 +464,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginBottom: 8,
+    backgroundColor: '#f0f0f0',
   },
   inputRow: {
     flexDirection: 'row',
