@@ -9,6 +9,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
@@ -86,134 +90,227 @@ export default function LoginScreen({ navigation }: Props) {
 
   if (isAutoLogging) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.loadingContent}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoEmoji}>💬</Text>
+          </View>
+          <ActivityIndicator size="large" color="#075E54" style={styles.loader} />
+          <Text style={styles.loadingText}>Memuat...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
-      <View style={styles.innerContainer}>
-        <Text style={styles.title}>Chat App</Text>
-        <Text style={styles.subtitle}>Login ke akun Anda</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoEmoji}>💬</Text>
+            </View>
+            <Text style={styles.title}>Selamat Datang</Text>
+            <Text style={styles.subtitle}>Masuk untuk melanjutkan chat</Text>
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          editable={!loading}
-        />
+          <View style={styles.formSection}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan email"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+              />
+            </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-        />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                editable={!loading}
+                textContentType="none"
+                autoComplete="off"
+              />
+            </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Nama Tampilan"
-          value={displayName}
-          onChangeText={setDisplayName}
-          editable={!loading}
-        />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Nama Tampilan</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan nama tampilan"
+                placeholderTextColor="#999"
+                value={displayName}
+                onChangeText={setDisplayName}
+                editable={!loading}
+              />
+            </View>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Masuk</Text>
-          )}
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.8}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Masuk</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => navigation.navigate('Register')}
-          disabled={loading}>
-          <Text style={styles.linkText}>Belum punya akun? Daftar di sini</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.footerSection}>
+            <Text style={styles.footerText}>Belum punya akun?</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Register')}
+              disabled={loading}>
+              <Text style={styles.linkText}>Daftar di sini</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-  innerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  loadingContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+  },
+  loader: {
+    marginTop: 24,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
     fontSize: 16,
     color: '#666',
   },
+  headerSection: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#075E54',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#075E54',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoEmoji: {
+    fontSize: 48,
+  },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
-    color: '#333',
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
     color: '#666',
   },
+  formSection: {
+    flex: 1,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f8f8',
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    borderColor: '#e0e0e0',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
     fontSize: 16,
+    color: '#333',
   },
   button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#075E54',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 12,
+    shadowColor: '#075E54',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#B0B0B0',
+    shadowOpacity: 0,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
-  linkButton: {
-    marginTop: 20,
+  footerSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 32,
+  },
+  footerText: {
+    fontSize: 15,
+    color: '#666',
   },
   linkText: {
-    color: '#007AFF',
-    fontSize: 14,
+    fontSize: 15,
+    color: '#075E54',
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });

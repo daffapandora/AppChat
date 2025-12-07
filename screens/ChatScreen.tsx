@@ -11,6 +11,9 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import {
   addDoc,
@@ -289,33 +292,48 @@ export default function ChatScreen({ route, navigation }: Props) {
   const renderItem = useCallback(
     ({ item }: { item: MessageType }) => {
       const isMyMessage = item.user === displayName;
+      const time = item.createdAt 
+        ? new Date(item.createdAt.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      
       return (
         <View
           style={[
-            styles.msgBox,
-            isMyMessage ? styles.myMsg : styles.otherMsg,
+            styles.msgContainer,
+            isMyMessage ? styles.myMsgContainer : styles.otherMsgContainer,
           ]}>
-          <Text style={[styles.sender, isMyMessage && styles.mySender]}>
-            {item.user}
-          </Text>
-          {item.imageBase64 && (
-            <Image 
-              source={{ uri: item.imageBase64 }} 
-              style={styles.image}
-              resizeMode="cover"
-              onError={(error) => {
-                console.error('Error loading image:', error.nativeEvent.error);
-              }}
-            />
-          )}
-          {item.text ? (
-            <Text style={[styles.msgText, isMyMessage && styles.myMsgText]}>
-              {item.text}
-            </Text>
-          ) : null}
-          {item.synced === false && (
-            <Text style={styles.unsyncedText}>⏱ Belum tersinkronisasi</Text>
-          )}
+          <View
+            style={[
+              styles.msgBox,
+              isMyMessage ? styles.myMsg : styles.otherMsg,
+            ]}>
+            {!isMyMessage && (
+              <Text style={styles.sender}>{item.user}</Text>
+            )}
+            {item.imageBase64 && (
+              <Image 
+                source={{ uri: item.imageBase64 }} 
+                style={styles.image}
+                resizeMode="cover"
+                onError={(error) => {
+                  console.error('Error loading image:', error.nativeEvent.error);
+                }}
+              />
+            )}
+            {item.text ? (
+              <Text style={[styles.msgText, isMyMessage && styles.myMsgText]}>
+                {item.text}
+              </Text>
+            ) : null}
+            <View style={styles.msgFooter}>
+              <Text style={[styles.timeText, isMyMessage && styles.myTimeText]}>
+                {time}
+              </Text>
+              {item.synced === false && (
+                <Text style={styles.unsyncedText}>⏱</Text>
+              )}
+            </View>
+          </View>
         </View>
       );
     },
@@ -323,30 +341,42 @@ export default function ChatScreen({ route, navigation }: Props) {
   );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-      keyboardVerticalOffset={90}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Chat Room</Text>
-          <Text style={styles.headerSubtitle}>
-            {isOnline ? '🟢 Online' : '🔴 Offline'}
-          </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#075E54" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+        keyboardVerticalOffset={0}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>💬</Text>
+            </View>
+            <View style={styles.headerInfo}>
+              <Text style={styles.headerTitle}>Chat Room</Text>
+              <View style={styles.statusContainer}>
+                <View style={[styles.statusDot, isOnline ? styles.online : styles.offline]} />
+                <Text style={styles.headerSubtitle}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Keluar</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Messages List */}
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.messagesList}
-      />
+        {/* Messages List */}
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.messagesList}
+          showsVerticalScrollIndicator={false}
+          inverted={false}
+        />
 
       {/* Selected Image Preview */}
       {selectedImage && (
@@ -357,217 +387,312 @@ export default function ChatScreen({ route, navigation }: Props) {
             style={styles.removeImageButton}>
             <Text style={styles.removeImageText}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.previewText}>
-            Gambar akan dikonversi ke text (base64) dan disimpan di Firestore
-          </Text>
         </View>
       )}
 
       {/* Input Row */}
-      <View style={styles.inputRow}>
+      <View style={styles.inputContainer}>
         <TouchableOpacity
           onPress={pickImage}
           style={styles.imageButton}
           disabled={processing}>
           <Text style={styles.imageButtonText}>📷</Text>
         </TouchableOpacity>
-        <TextInput
-          style={styles.input}
-          placeholder="Ketik pesan..."
-          value={message}
-          onChangeText={setMessage}
-          editable={!processing}
-          multiline
-        />
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            placeholder="Ketik pesan..."
+            placeholderTextColor="#999"
+            value={message}
+            onChangeText={setMessage}
+            editable={!processing}
+            multiline
+            maxLength={1000}
+          />
+        </View>
         <TouchableOpacity
           onPress={sendMessage}
-          style={[styles.sendButton, processing && styles.sendButtonDisabled]}
+          style={[
+            styles.sendButton, 
+            (!message.trim() && !selectedImage) && styles.sendButtonDisabled
+          ]}
           disabled={processing || (!message.trim() && !selectedImage)}>
           {processing ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.sendButtonText}>Kirim</Text>
+            <Text style={styles.sendButtonText}>➤</Text>
           )}
         </TouchableOpacity>
       </View>
       
       {processing && (
         <View style={styles.processingOverlay}>
+          <ActivityIndicator size="large" color="#075E54" />
           <Text style={styles.processingText}>Memproses gambar...</Text>
         </View>
       )}
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#075E54',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ECE5DD',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#007AFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#075E54',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 20,
+  },
+  headerInfo: {
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#fff',
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 2,
   },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  online: {
+    backgroundColor: '#25D366',
+  },
+  offline: {
+    backgroundColor: '#ff4444',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+  },
   logoutButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 20,
   },
   logoutText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   messagesList: {
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+  },
+  msgContainer: {
+    marginVertical: 4,
+  },
+  myMsgContainer: {
+    alignItems: 'flex-end',
+  },
+  otherMsgContainer: {
+    alignItems: 'flex-start',
   },
   msgBox: {
-    padding: 12,
-    marginVertical: 4,
-    borderRadius: 12,
-    maxWidth: '75%',
+    padding: 10,
+    paddingBottom: 6,
+    borderRadius: 16,
+    maxWidth: SCREEN_WIDTH * 0.75,
+    minWidth: 80,
   },
   myMsg: {
-    backgroundColor: '#007AFF',
-    alignSelf: 'flex-end',
+    backgroundColor: '#DCF8C6',
+    borderTopRightRadius: 4,
   },
   otherMsg: {
     backgroundColor: '#fff',
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderTopLeftRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   sender: {
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 4,
-    fontSize: 12,
-    color: '#666',
-  },
-  mySender: {
-    color: '#E0E0E0',
+    fontSize: 13,
+    color: '#075E54',
   },
   msgText: {
     fontSize: 15,
     lineHeight: 20,
-    color: '#333',
+    color: '#303030',
   },
   myMsgText: {
-    color: '#fff',
+    color: '#303030',
   },
-  unsyncedText: {
-    fontSize: 10,
-    color: '#999',
-    fontStyle: 'italic',
+  msgFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     marginTop: 4,
   },
+  timeText: {
+    fontSize: 11,
+    color: '#999',
+  },
+  myTimeText: {
+    color: '#7C9A7E',
+  },
+  unsyncedText: {
+    fontSize: 11,
+    color: '#999',
+    marginLeft: 4,
+  },
   image: {
-    width: 200,
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 8,
+    width: SCREEN_WIDTH * 0.55,
+    height: SCREEN_WIDTH * 0.55,
+    borderRadius: 12,
+    marginBottom: 6,
     backgroundColor: '#f0f0f0',
   },
-  inputRow: {
+  inputContainer: {
     flexDirection: 'row',
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: '#ECE5DD',
+    alignItems: 'flex-end',
   },
   imageButton: {
-    padding: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   imageButtonText: {
-    fontSize: 24,
+    fontSize: 22,
+  },
+  inputWrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    minHeight: 44,
+    maxHeight: 120,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginRight: 8,
-    padding: 10,
-    borderRadius: 20,
-    backgroundColor: '#f9f9f9',
+    fontSize: 16,
+    color: '#303030',
+    paddingVertical: 10,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#075E54',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#B0B0B0',
   },
   sendButtonText: {
     color: '#fff',
+    fontSize: 20,
     fontWeight: '600',
   },
   imagePreview: {
-    padding: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderColor: '#ddd',
-    position: 'relative',
+    borderColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   previewImage: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     borderRadius: 8,
-  },
-  previewText: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 8,
-    fontStyle: 'italic',
   },
   removeImageButton: {
     position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
+    top: 8,
+    left: 64,
+    backgroundColor: '#ff4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeImageText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   processingOverlay: {
     position: 'absolute',
-    bottom: 80,
+    top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 10,
   },
   processingText: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    color: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    fontSize: 14,
+    marginTop: 12,
+    color: '#075E54',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

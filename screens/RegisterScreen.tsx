@@ -9,6 +9,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
@@ -80,124 +84,211 @@ export default function RegisterScreen({ navigation }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
-      <View style={styles.innerContainer}>
-        <Text style={styles.title}>Daftar Akun Baru</Text>
-        <Text style={styles.subtitle}>Buat akun untuk mulai chat</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoEmoji}>✨</Text>
+            </View>
+            <Text style={styles.title}>Buat Akun Baru</Text>
+            <Text style={styles.subtitle}>Daftar untuk mulai chat</Text>
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          editable={!loading}
-        />
+          <View style={styles.formSection}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan email"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+              />
+            </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Nama Tampilan"
-          value={displayName}
-          onChangeText={setDisplayName}
-          editable={!loading}
-        />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Nama Tampilan</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan nama tampilan"
+                placeholderTextColor="#999"
+                value={displayName}
+                onChangeText={setDisplayName}
+                editable={!loading}
+              />
+            </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password (min. 6 karakter)"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-        />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Minimal 6 karakter"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                editable={!loading}
+                textContentType="none"
+                autoComplete="off"
+              />
+            </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Konfirmasi Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          editable={!loading}
-        />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Konfirmasi Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ulangi password"
+                placeholderTextColor="#999"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                editable={!loading}
+                textContentType="none"
+                autoComplete="off"
+              />
+            </View>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Daftar</Text>
-          )}
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+              activeOpacity={0.8}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Daftar</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => navigation.navigate('Login')}
-          disabled={loading}>
-          <Text style={styles.linkText}>Sudah punya akun? Login di sini</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.footerSection}>
+            <Text style={styles.footerText}>Sudah punya akun?</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Login')}
+              disabled={loading}>
+              <Text style={styles.linkText}>Masuk di sini</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-  innerContainer: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  headerSection: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 32,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#25D366',
     justifyContent: 'center',
-    padding: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoEmoji: {
+    fontSize: 36,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
-    color: '#333',
   },
   subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
+    fontSize: 15,
     color: '#666',
   },
+  formSection: {
+    flex: 1,
+  },
+  inputContainer: {
+    marginBottom: 18,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f8f8',
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    borderColor: '#e0e0e0',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
     fontSize: 16,
+    color: '#333',
   },
   button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#075E54',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
+    shadowColor: '#075E54',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#B0B0B0',
+    shadowOpacity: 0,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
-  linkButton: {
-    marginTop: 20,
+  footerSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 24,
+  },
+  footerText: {
+    fontSize: 15,
+    color: '#666',
   },
   linkText: {
-    color: '#007AFF',
-    fontSize: 14,
+    fontSize: 15,
+    color: '#075E54',
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });
